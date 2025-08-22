@@ -5,7 +5,7 @@
 *
 *            Please feel free to fix any bugs or weird glitches that you find. 
 *            
-*            I would love to hear any improvements and or fixes to this existing code!! Thanks!
+*            I would love to hear any improvements and/or fixes to this existing code!! Thanks!
 *
 *
 *            Using Arduino Nano with MCP4728 DAC
