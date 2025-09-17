@@ -39,6 +39,28 @@ const unsigned long MOD_UPDATE_INTERVAL = 5;
 const float modStep = 0.05;                   
 unsigned long lastModUpdate = 0;
 
+// ---- Trigger handling ----
+const unsigned long TRIGGER_PULSE_MS = 10;
+unsigned long triggerStart[4] = {0, 0, 0, 0};
+bool triggerActive[4] = {false, false, false, false};
+
+void startTrigger(uint8_t index) {
+  digitalWrite(TRIGGER_PINS[index], HIGH);
+  triggerStart[index] = millis();
+  triggerActive[index] = true;
+}
+
+void updateTriggers() {
+  unsigned long now = millis();
+  for (int i = 0; i < 4; i++) {
+    if (triggerActive[i] && (now - triggerStart[i] >= TRIGGER_PULSE_MS)) {
+      digitalWrite(TRIGGER_PINS[i], LOW);
+      triggerActive[i] = false;
+    }
+  }
+}
+// ---------------------------
+
 struct NoteSlot {
   bool active;
   uint8_t note;
@@ -82,9 +104,7 @@ void handleNoteOn(byte channel, byte note, byte velocity) {
       for (int i=0; i<4; i++) {
         dac.setChannelValue((MCP4728_channel_t)i, voltage * 4095 / 5.0);
         digitalWrite(GATE_PINS[i], HIGH);
-        digitalWrite(TRIGGER_PINS[i], HIGH);
-        delay(10);
-        digitalWrite(TRIGGER_PINS[i], LOW);
+        startTrigger(i);
       }
     } else {
       int slot = findFreeSlot();
@@ -92,9 +112,7 @@ void handleNoteOn(byte channel, byte note, byte velocity) {
         activeNotes[slot] = {true, note, velocity};
         updateCV();
         digitalWrite(GATE_PINS[slot], HIGH);
-        digitalWrite(TRIGGER_PINS[slot], HIGH);
-        delay(10);
-        digitalWrite(TRIGGER_PINS[slot], LOW);
+        startTrigger(slot);
       }
     }
   } else {
@@ -106,9 +124,7 @@ void handleNoteOn(byte channel, byte note, byte velocity) {
       if (modVoltage > 5.0) modVoltage = 5.0;
       dac.setChannelValue((MCP4728_channel_t)index, modVoltage * 4095 / 5.0);
       digitalWrite(GATE_PINS[index], HIGH);
-      digitalWrite(TRIGGER_PINS[index], HIGH);
-      delay(10);
-      digitalWrite(TRIGGER_PINS[index], LOW);
+      startTrigger(index);
     }
   }
 }
@@ -220,4 +236,6 @@ void loop() {
     lastModUpdate = now;
     updateModWheelOutputSmooth();
   }
+
+  updateTriggers();
 }
